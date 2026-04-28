@@ -1,0 +1,48 @@
+.ready-main { padding-bottom: 3rem; }
+
+.ready-header { margin-bottom: 2rem; }
+.ready-header h1 { font-size: 1.6rem; font-weight: 700; margin-bottom: 0.4rem; }
+.ready-header p { color: var(--text2); font-size: 0.9rem; }
+
+.ready-section { margin-bottom: 1rem; }
+
+.audio-links { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 0.5rem; }
+.audio-btn { font-size: 0.9rem; padding: 0.7rem 1.25rem; }
+
+.pick-list { display: flex; flex-direction: column; gap: 0.5rem; }
+.pick-list .radio-option { align-items: flex-start; }
+.desc-option .desc-preview { font-size: 0.83rem; color: var(--text2); line-height: 1.6; white-space: pre-wrap; }
+.pick-copy { margin-top: 0.75rem; }
+
+.poll-list { display: flex; flex-direction: column; gap: 0.75rem; }
+.poll-item { border: 1px solid var(--border); border-radius: 10px; padding: 0.85rem 1rem; }
+.poll-question { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.6rem; }
+.poll-options { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.poll-opt { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 0.25rem 0.65rem; font-size: 0.78rem; color: var(--text2); }
+
+.cover-hint { color: var(--text2); font-size: 0.83rem; margin-bottom: 0.85rem; }
+.cover-links { display: flex; flex-direction: column; gap: 0.5rem; }
+.cover-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 0.875rem;
+  transition: border-color 0.15s, background 0.15s;
+}
+.cover-link:hover { border-color: var(--accent); background: rgba(124,106,247,0.06); text-decoration: none; }
+.cover-num { background: var(--accent); color: #fff; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 700; flex-shrink: 0; }
+.cover-arrow { margin-left: auto; color: var(--text2); }
+
+.social-post { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 0.5rem; }
+.social-header { display: flex; justify-content: space-between; align-items: center; padding: 0.85rem 1rem; cursor: pointer; font-weight: 600; font-size: 0.9rem; }
+.social-header:hover { background: var(--surface2); }
+.social-toggle { color: var(--text2); font-size: 0.75rem; }
+.social-body { padding: 0 1rem 1rem; border-top: 1px solid var(--border); }
+.social-text { white-space: pre-wrap; font-family: inherit; font-size: 0.85rem; line-height: 1.7; color: var(--text2); padding: 0.85rem 0; margin: 0; }
+
+.ready-footer { margin-top: 2rem; text-align: center; }
+.ready-footer .btn-primary { font-size: 1rem; padding: 0.85rem 2rem; }

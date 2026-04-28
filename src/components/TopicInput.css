@@ -1,0 +1,72 @@
+.input-header { margin-bottom: 1.5rem; }
+.input-header h1 { font-size: 1.6rem; font-weight: 700; margin-bottom: 0.4rem; }
+.input-header p { color: var(--text2); font-size: 0.9rem; }
+
+.settings-banner {
+  background: rgba(124,106,247,0.1);
+  border-color: var(--accent);
+  color: var(--accent2);
+  cursor: pointer;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  padding: 0.85rem 1rem;
+}
+.settings-banner:hover { background: rgba(124,106,247,0.15); }
+
+.topic-card { margin-bottom: 1rem; display: flex; flex-direction: column; gap: 1rem; }
+
+.input-mode-tabs { display: flex; gap: 0.5rem; }
+.mode-tab {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  padding: 0.45rem 1rem;
+  font-size: 0.83rem;
+  border-radius: 999px;
+}
+.mode-tab.active { border-color: var(--accent); color: var(--accent2); background: rgba(124,106,247,0.1); }
+.mode-tab:hover:not(.active) { border-color: var(--accent); color: var(--text); }
+
+.topic-textarea {
+  min-height: 120px;
+  resize: vertical;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.voice-area, .file-area { display: flex; flex-direction: column; gap: 0.75rem; }
+
+.voice-btn {
+  background: var(--accent);
+  color: #fff;
+  padding: 0.85rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: var(--radius);
+  align-self: flex-start;
+}
+.voice-btn.recording { background: var(--red); animation: pulse 1.5s ease-in-out infinite; }
+.voice-btn:hover:not(.recording) { background: var(--accent2); }
+
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+
+.recording-pulse { color: var(--red); font-size: 0.85rem; font-weight: 500; }
+
+.upload-btn { align-self: flex-start; }
+
+.audio-method-card { margin-bottom: 1.5rem; }
+.audio-methods { display: flex; flex-direction: column; gap: 0.6rem; }
+.method-label { font-weight: 600; font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.2rem; }
+.method-desc { color: var(--text2); font-size: 0.83rem; line-height: 1.5; }
+
+.error-banner {
+  background: rgba(239,68,68,0.1);
+  border: 1px solid var(--red);
+  color: var(--red);
+  border-radius: var(--radius);
+  padding: 0.85rem 1rem;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.start-btn { width: 100%; font-size: 1.05rem; padding: 1rem; }

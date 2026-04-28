@@ -1,0 +1,188 @@
+name: Podcast Research & Generation
+
+on:
+  workflow_dispatch:
+    inputs:
+      topic:
+        description: 'Podcast topic (plain text)'
+        required: true
+        type: string
+      audio_method:
+        description: 'Audio generation method'
+        required: true
+        type: choice
+        options:
+          - podcastfy
+          - elevenlabs
+          - notebooklm
+      run_id_label:
+        description: 'Unique run label for results folder'
+        required: false
+        type: string
+        default: ''
+
+jobs:
+  transcribe:
+    name: Prepare Topic
+    runs-on: ubuntu-latest
+    outputs:
+      topic_text: ${{ steps.prep.outputs.topic_text }}
+      run_label: ${{ steps.prep.outputs.run_label }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set run label
+        id: prep
+        run: |
+          LABEL="${{ inputs.run_id_label }}"
+          if [ -z "$LABEL" ]; then
+            LABEL=$(date +%Y%m%d-%H%M%S)
+          fi
+          echo "run_label=$LABEL" >> $GITHUB_OUTPUT
+          echo "topic_text=${{ inputs.topic }}" >> $GITHUB_OUTPUT
+
+  research:
+    name: Deep Research — ${{ matrix.provider }}
+    needs: transcribe
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        provider: [claude, openai, gemini]
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Run research
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          PROVIDER: ${{ matrix.provider }}
+          TOPIC: ${{ needs.transcribe.outputs.topic_text }}
+          RUN_LABEL: ${{ needs.transcribe.outputs.run_label }}
+        run: python scripts/research.py
+      - name: Upload research artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: research-${{ matrix.provider }}
+          path: results/${{ needs.transcribe.outputs.run_label }}/research-${{ matrix.provider }}.md
+
+  generate-metadata:
+    name: Generate Metadata
+    needs: [transcribe, research]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Download all research
+        uses: actions/download-artifact@v4
+        with:
+          pattern: research-*
+          path: results/${{ needs.transcribe.outputs.run_label }}/
+          merge-multiple: true
+      - name: Generate metadata
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          TOPIC: ${{ needs.transcribe.outputs.topic_text }}
+          RUN_LABEL: ${{ needs.transcribe.outputs.run_label }}
+        run: python scripts/generate_metadata.py
+      - name: Upload metadata artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: metadata
+          path: results/${{ needs.transcribe.outputs.run_label }}/metadata.json
+
+  generate-audio:
+    name: Generate Audio
+    needs: [transcribe, research]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Download all research
+        uses: actions/download-artifact@v4
+        with:
+          pattern: research-*
+          path: results/${{ needs.transcribe.outputs.run_label }}/
+          merge-multiple: true
+      - name: Generate audio (podcastfy)
+        if: inputs.audio_method == 'podcastfy'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          TOPIC: ${{ needs.transcribe.outputs.topic_text }}
+          RUN_LABEL: ${{ needs.transcribe.outputs.run_label }}
+        run: python scripts/generate_audio_podcastfy.py
+      - name: Generate audio (ElevenLabs)
+        if: inputs.audio_method == 'elevenlabs'
+        env:
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          TOPIC: ${{ needs.transcribe.outputs.topic_text }}
+          RUN_LABEL: ${{ needs.transcribe.outputs.run_label }}
+        run: python scripts/generate_audio_elevenlabs.py
+      - name: Package for NotebookLM
+        if: inputs.audio_method == 'notebooklm'
+        env:
+          RUN_LABEL: ${{ needs.transcribe.outputs.run_label }}
+        run: python scripts/package_notebooklm.py
+      - name: Upload audio artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: audio-output
+          path: results/${{ needs.transcribe.outputs.run_label }}/
+
+  commit-results:
+    name: Commit Results
+    needs: [transcribe, generate-metadata, generate-audio]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: results/${{ needs.transcribe.outputs.run_label }}/
+          merge-multiple: true
+      - name: Write run manifest
+        env:
+          RUN_LABEL: ${{ needs.transcribe.outputs.run_label }}
+          TOPIC: ${{ needs.transcribe.outputs.topic_text }}
+          AUDIO_METHOD: ${{ inputs.audio_method }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+        run: |
+          python -c "
+          import json, os
+          manifest = {
+            'run_label': os.environ['RUN_LABEL'],
+            'topic': os.environ['TOPIC'],
+            'audio_method': os.environ['AUDIO_METHOD'],
+            'github_run_id': os.environ['GITHUB_RUN_ID'],
+            'status': 'complete'
+          }
+          path = f\"results/{os.environ['RUN_LABEL']}/manifest.json\"
+          os.makedirs(os.path.dirname(path), exist_ok=True)
+          with open(path, 'w') as f:
+              json.dump(manifest, f, indent=2)
+          "
+      - name: Commit and push results
+        env:
+          RUN_LABEL: ${{ needs.transcribe.outputs.run_label }}
+        run: |
+          git config user.name "podcast-bot"
+          git config user.email "podcast-bot@ai-counsel"
+          git add results/
+          git commit -m "results: $RUN_LABEL" || echo "Nothing to commit"
+          git push origin HEAD
