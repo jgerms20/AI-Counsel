@@ -1,0 +1,18 @@
+.settings-header { margin-bottom: 1.5rem; }
+.settings-header h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; }
+.settings-desc { color: var(--text2); font-size: 0.875rem; line-height: 1.6; }
+
+.settings-form { display: flex; flex-direction: column; gap: 1.25rem; margin-bottom: 1.5rem; }
+
+.field { display: flex; flex-direction: column; gap: 0.4rem; }
+.field label { font-size: 0.85rem; font-weight: 600; color: var(--text2); }
+.field-hint { font-size: 0.78rem; color: var(--text2); }
+.field-hint code { background: var(--surface2); padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.75rem; }
+
+.settings-secrets { margin-top: 0; }
+.secrets-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 0.5rem; }
+.secrets-table th { text-align: left; color: var(--text2); font-weight: 600; padding: 0.5rem 0; border-bottom: 1px solid var(--border); }
+.secrets-table td { padding: 0.6rem 0; border-bottom: 1px solid var(--border); vertical-align: top; }
+.secrets-table td:first-child { padding-right: 1rem; white-space: nowrap; }
+.secrets-table code { background: var(--surface2); padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.78rem; }
+.secret-desc { color: var(--text2); }

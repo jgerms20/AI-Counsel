@@ -1,0 +1,73 @@
+.progress-header { margin-bottom: 1.5rem; }
+.progress-header h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.4rem; }
+.progress-sub { color: var(--text2); font-size: 0.875rem; }
+
+.steps-card { display: flex; flex-direction: column; gap: 0; margin-bottom: 1rem; padding: 0; overflow: hidden; }
+
+.step {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.2s;
+}
+.step:last-child { border-bottom: none; }
+
+.step-done { opacity: 0.6; }
+.step-active { background: rgba(124,106,247,0.06); }
+.step-pending { opacity: 0.35; }
+
+.step-icon {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+  font-size: 0.9rem;
+  color: var(--green);
+  font-weight: 700;
+}
+
+.step-done .step-icon { color: var(--green); }
+.step-active .step-icon { color: var(--accent2); }
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.dot {
+  width: 8px;
+  height: 8px;
+  background: var(--border);
+  border-radius: 50%;
+  display: block;
+}
+
+.step-label { font-weight: 600; font-size: 0.9rem; margin-bottom: 0.2rem; }
+.step-detail { color: var(--text2); font-size: 0.82rem; }
+
+.run-info { margin-bottom: 1.5rem; }
+.run-label { background: var(--surface2); padding: 0.35rem 0.75rem; border-radius: 6px; font-size: 0.82rem; display: inline-block; margin: 0.35rem 0 0.5rem; }
+.run-hint { font-size: 0.82rem; color: var(--text2); }
+
+.cancel-btn { margin-top: 0.5rem; }
+
+.error-banner {
+  background: rgba(239,68,68,0.1);
+  border: 1px solid var(--red);
+  color: var(--red);
+  border-radius: var(--radius);
+  padding: 0.85rem 1rem;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
