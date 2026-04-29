@@ -1,69 +1,69 @@
 import { useState, useEffect, useRef } from 'react'
 import { fetchResultFile } from '../lib/github.js'
+import { getSettings } from '../lib/settings.js'
 import './ProgressTracker.css'
 
 const STEPS = [
-  { id: 'research', label: 'Deep research', detail: 'Claude + OpenAI + Gemini running in parallel (~40 min)' },
-  { id: 'metadata', label: 'Generating titles & descriptions', detail: 'Titles, descriptions, social posts, poll questions…' },
-  { id: 'audio', label: 'Generating audio', detail: 'Building your 50-minute deep-dive episode' },
-  { id: 'commit', label: 'Saving results', detail: 'Packaging everything into your repo' },
+  { id: 'research', label: 'Deep research',               detail: 'Claude + OpenAI + Gemini running in parallel — takes ~40 min' },
+  { id: 'metadata', label: 'Generating metadata',         detail: 'Titles, descriptions, social posts, Spotify poll questions…' },
+  { id: 'audio',    label: 'Generating audio',            detail: 'Building your ~50-minute episode' },
+  { id: 'commit',   label: 'Saving results to your repo', detail: 'Packaging everything up' },
 ]
 
-export default function ProgressTracker({ runLabel, onComplete, onReset }) {
-  const [stepIndex, setStepIndex] = useState(0)
-  const [elapsed, setElapsed] = useState(0)
-  const [done, setDone] = useState(false)
-  const [error, setError] = useState(null)
-  const startTime = useRef(Date.now())
-  const pollRef = useRef(null)
+function fmt(secs) {
+  const m = Math.floor(secs / 60), s = secs % 60
+  return `${m}:${String(s).padStart(2, '0')}`
+}
 
+export default function ProgressTracker({ runLabel, onComplete, onReset }) {
+  const [stepIndex, setStepIndex]   = useState(0)
+  const [elapsed, setElapsed]       = useState(0)
+  const [done, setDone]             = useState(false)
+  const startRef = useRef(Date.now())
+  const pollRef  = useRef(null)
+
+  // Elapsed clock
   useEffect(() => {
-    const tick = setInterval(() => setElapsed(Math.floor((Date.now() - startTime.current) / 1000)), 1000)
-    return () => clearInterval(tick)
+    const t = setInterval(() => setElapsed(Math.floor((Date.now() - startRef.current) / 1000)), 1000)
+    return () => clearInterval(t)
   }, [])
 
+  // Approximate step based on elapsed time while polling
   useEffect(() => {
-    // Simulate step progression based on elapsed time, then poll for real completion
-    const stepTimings = [0, 40 * 60, 42 * 60, 44 * 60] // approximate seconds when each step starts
-    const stepTimer = setInterval(() => {
-      const secs = (Date.now() - startTime.current) / 1000
-      const idx = stepTimings.filter(t => secs >= t).length - 1
-      setStepIndex(Math.min(idx, STEPS.length - 1))
-    }, 5000)
+    const stepAt = [0, 40 * 60, 42 * 60, 44 * 60]
+    const advance = setInterval(() => {
+      const secs = (Date.now() - startRef.current) / 1000
+      const idx  = stepAt.filter(t => secs >= t).length - 1
+      setStepIndex(i => Math.max(i, Math.min(idx, STEPS.length - 1)))
+    }, 10000)
 
-    // Poll for manifest.json every 30s
     pollRef.current = setInterval(async () => {
       try {
         const manifest = await fetchResultFile(runLabel, 'manifest.json')
         if (manifest?.status === 'complete') {
           clearInterval(pollRef.current)
-          clearInterval(stepTimer)
+          clearInterval(advance)
           setStepIndex(STEPS.length)
           setDone(true)
           const metadata = await fetchResultFile(runLabel, 'metadata.json')
           onComplete({ manifest, metadata })
         }
-      } catch {
-        // Not ready yet — keep polling
-      }
+      } catch { /* not ready yet */ }
     }, 30000)
 
-    return () => { clearInterval(stepTimer); clearInterval(pollRef.current) }
+    return () => { clearInterval(advance); clearInterval(pollRef.current) }
   }, [runLabel, onComplete])
 
-  function fmt(secs) {
-    const m = Math.floor(secs / 60), s = secs % 60
-    return `${m}:${String(s).padStart(2, '0')}`
-  }
+  const { repo } = getSettings()
 
   return (
     <main className="main">
-      <div className="progress-header">
-        <h1>{done ? '✅ Ready.' : 'Automation running…'}</h1>
-        <p className="progress-sub">
+      <div className="prog-heading">
+        <h1>{done ? '✅ Ready.' : 'Running…'}</h1>
+        <p>
           {done
             ? 'Record your preamble, then upload the audio to Spotify.'
-            : `Elapsed: ${fmt(elapsed)} — sit back, this takes ~45 minutes`}
+            : `Elapsed: ${fmt(elapsed)} — this takes about 45 minutes. You can close the tab and come back.`}
         </p>
       </div>
 
@@ -73,7 +73,9 @@ export default function ProgressTracker({ runLabel, onComplete, onReset }) {
           return (
             <div key={step.id} className={`step step-${state}`}>
               <div className="step-icon">
-                {state === 'done' ? '✓' : state === 'active' ? <span className="spinner" /> : <span className="dot" />}
+                {state === 'done'    && <span className="step-check">✓</span>}
+                {state === 'active'  && <span className="step-spinner" />}
+                {state === 'pending' && <span className="step-dot" />}
               </div>
               <div>
                 <div className="step-label">{step.label}</div>
@@ -85,23 +87,16 @@ export default function ProgressTracker({ runLabel, onComplete, onReset }) {
       </div>
 
       <div className="card run-info">
-        <p className="section-title">Run ID</p>
-        <code className="run-label">{runLabel}</code>
-        <p className="run-hint">
-          Check live progress in{' '}
-          <a
-            href={`https://github.com/${localStorage.getItem('ep_settings') ? JSON.parse(localStorage.getItem('ep_settings')).repo : 'your-repo'}/actions`}
-            target="_blank"
-            rel="noreferrer"
-          >
-            GitHub Actions →
+        <p className="label">Run ID</p>
+        <code className="run-id">{runLabel}</code>
+        <p className="run-link">
+          <a href={`https://github.com/${repo}/actions`} target="_blank" rel="noreferrer">
+            View live progress in GitHub Actions →
           </a>
         </p>
       </div>
 
-      {error && <div className="error-banner">{error}</div>}
-
-      <button className="btn-secondary cancel-btn" onClick={onReset}>
+      <button className="btn-ghost cancel-btn" onClick={onReset}>
         ← Start a new episode
       </button>
     </main>

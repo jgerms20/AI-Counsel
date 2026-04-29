@@ -1,105 +1,103 @@
 import { useState } from 'react'
 import CopyButton from './CopyButton.jsx'
+import { getSettings } from '../lib/settings.js'
 import './ReadyScreen.css'
 
 export default function ReadyScreen({ results, runLabel, onNew }) {
   const { metadata } = results || {}
   const [selectedTitle, setSelectedTitle] = useState(0)
-  const [selectedDesc, setSelectedDesc] = useState(0)
+  const [selectedDesc,  setSelectedDesc]  = useState(0)
+
+  const { repo } = getSettings()
+  const rawBase = `https://raw.githubusercontent.com/${repo}/main/results/${runLabel}`
 
   if (!metadata) {
     return (
       <main className="main">
-        <div className="ready-header">
+        <div className="ready-heading">
           <h1>✅ Ready</h1>
-          <p>Results committed but metadata could not be loaded. Check your repo's results/{runLabel}/ folder.</p>
+          <p>Check your repo's <code>results/{runLabel}/</code> folder for all outputs.</p>
         </div>
         <button className="btn-primary" onClick={onNew}>Start a new episode</button>
       </main>
     )
   }
 
-  const repoPath = (() => {
-    try { return JSON.parse(localStorage.getItem('ep_settings') || '{}').repo || 'your-repo' } catch { return 'your-repo' }
-  })()
-
   return (
-    <main className="main ready-main">
-      <div className="ready-header">
+    <main className="main">
+      <div className="ready-heading">
         <h1>✅ Everything is ready.</h1>
-        <p>Record your preamble and add it to the top of the audio file, then upload to Spotify.</p>
+        <p>Record your preamble and add it to the top of the audio, then upload to Spotify.</p>
       </div>
 
-      {/* Audio Download */}
+      {/* Audio */}
       <section className="ready-section card">
-        <p className="section-title">🎙 Audio</p>
-        <div className="audio-links">
-          <a
-            className="btn-primary audio-btn"
-            href={`https://raw.githubusercontent.com/${repoPath}/main/results/${runLabel}/audio.mp3`}
-            target="_blank"
-            rel="noreferrer"
-          >
+        <p className="label">🎙 Audio</p>
+        <div className="audio-row">
+          <a className="btn-primary" href={`${rawBase}/audio.mp3`} target="_blank" rel="noreferrer">
             Download audio.mp3
           </a>
-          <a
-            className="btn-secondary audio-btn"
-            href={`https://raw.githubusercontent.com/${repoPath}/main/results/${runLabel}/notebooklm-sources.zip`}
-            target="_blank"
-            rel="noreferrer"
-          >
+          <a className="btn-ghost" href={`${rawBase}/notebooklm-sources.zip`} target="_blank" rel="noreferrer">
             Download NotebookLM sources
           </a>
         </div>
       </section>
 
-      {/* Title Picker */}
+      {/* Title */}
       <section className="ready-section card">
-        <p className="section-title">📋 Pick your episode title</p>
+        <p className="label">📋 Episode title</p>
         <div className="pick-list">
-          {(metadata.titles || []).map((title, i) => (
-            <label key={i} className={`radio-option ${selectedTitle === i ? 'selected' : ''}`}>
-              <input type="radio" name="title" checked={selectedTitle === i} onChange={() => setSelectedTitle(i)} />
-              <span>{title}</span>
-            </label>
+          {(metadata.titles || []).map((t, i) => (
+            <button
+              key={i}
+              className={`pick-option ${selectedTitle === i ? 'selected' : ''}`}
+              onClick={() => setSelectedTitle(i)}
+            >
+              <input type="radio" readOnly checked={selectedTitle === i} />
+              <span className="pick-text">{t}</span>
+            </button>
           ))}
         </div>
         {metadata.titles?.[selectedTitle] && (
-          <div className="pick-copy">
-            <CopyButton text={metadata.titles[selectedTitle]} />
+          <div className="pick-footer">
+            <CopyButton text={metadata.titles[selectedTitle]} label="Copy title" />
           </div>
         )}
       </section>
 
-      {/* Description Picker */}
+      {/* Description */}
       <section className="ready-section card">
-        <p className="section-title">📝 Pick your episode description</p>
+        <p className="label">📝 Episode description</p>
         <div className="pick-list">
-          {(metadata.descriptions || []).map((desc, i) => (
-            <label key={i} className={`radio-option desc-option ${selectedDesc === i ? 'selected' : ''}`}>
-              <input type="radio" name="desc" checked={selectedDesc === i} onChange={() => setSelectedDesc(i)} />
-              <span className="desc-preview">{desc}</span>
-            </label>
+          {(metadata.descriptions || []).map((d, i) => (
+            <button
+              key={i}
+              className={`pick-option ${selectedDesc === i ? 'selected' : ''}`}
+              onClick={() => setSelectedDesc(i)}
+            >
+              <input type="radio" readOnly checked={selectedDesc === i} />
+              <span className="pick-text">{d}</span>
+            </button>
           ))}
         </div>
         {metadata.descriptions?.[selectedDesc] && (
-          <div className="pick-copy">
+          <div className="pick-footer">
             <CopyButton text={metadata.descriptions[selectedDesc]} label="Copy description" />
           </div>
         )}
       </section>
 
-      {/* Spotify Poll Questions */}
+      {/* Spotify polls */}
       <section className="ready-section card">
-        <p className="section-title">📊 Spotify poll questions</p>
+        <p className="label">📊 Spotify poll questions</p>
         <div className="poll-list">
           {(metadata.spotify_poll_questions || []).map((poll, i) => (
             <div key={i} className="poll-item">
-              <div className="poll-question">
-                <span>{poll.question}</span>
+              <div className="poll-q">
+                <span className="poll-q-text">{poll.question}</span>
                 <CopyButton text={poll.question} />
               </div>
-              <div className="poll-options">
+              <div className="poll-opts">
                 {(poll.options || []).map((opt, j) => (
                   <span key={j} className="poll-opt">{opt}</span>
                 ))}
@@ -109,34 +107,32 @@ export default function ReadyScreen({ results, runLabel, onNew }) {
         </div>
       </section>
 
-      {/* Cover Photo */}
+      {/* Cover photo */}
       <section className="ready-section card">
-        <p className="section-title">📷 Find your cover photo</p>
-        <p className="cover-hint">Click to search Google Images for real photos — pick one that fits the vibe.</p>
+        <p className="label">📷 Cover photo</p>
+        <p className="cover-hint">Click to search Google Images — find a real photo that fits the vibe.</p>
         <div className="cover-links">
-          {(metadata.cover_image_searches || []).map((item, i) => (
-            <a
-              key={i}
-              href={item.url || `https://www.google.com/search?q=${encodeURIComponent(item.query || item)}&tbm=isch&tbs=itp:photo`}
-              target="_blank"
-              rel="noreferrer"
-              className="cover-link"
-            >
-              <span className="cover-num">{i + 1}</span>
-              <span>{item.query || item}</span>
-              <span className="cover-arrow">→</span>
-            </a>
-          ))}
+          {(metadata.cover_image_searches || []).map((item, i) => {
+            const query = item.query || item
+            const url   = item.url   || `https://www.google.com/search?q=${encodeURIComponent(query)}&tbm=isch&tbs=itp:photo`
+            return (
+              <a key={i} className="cover-link" href={url} target="_blank" rel="noreferrer">
+                <span className="cover-num">{i + 1}</span>
+                <span>{query}</span>
+                <span className="cover-arrow">→</span>
+              </a>
+            )
+          })}
         </div>
       </section>
 
-      {/* Social Posts */}
+      {/* Social posts */}
       <section className="ready-section card">
-        <p className="section-title">📱 Social posts</p>
-        <div className="social-tabs-content">
-          <SocialPost platform="Instagram" icon="📸" text={metadata.instagram_post} />
-          <SocialPost platform="Twitter / X" icon="𝕏" text={metadata.twitter_post} />
-          <SocialPost platform="YouTube" icon="▶" text={metadata.youtube_description} />
+        <p className="label">📱 Social posts</p>
+        <div className="social-list">
+          <SocialPost icon="📸" platform="Instagram"  text={metadata.instagram_post} />
+          <SocialPost icon="𝕏"  platform="Twitter / X" text={metadata.twitter_post} />
+          <SocialPost icon="▶"  platform="YouTube"    text={metadata.youtube_description} />
         </div>
       </section>
 
@@ -147,14 +143,14 @@ export default function ReadyScreen({ results, runLabel, onNew }) {
   )
 }
 
-function SocialPost({ platform, icon, text }) {
+function SocialPost({ icon, platform, text }) {
   const [open, setOpen] = useState(false)
   return (
-    <div className="social-post">
-      <div className="social-header" onClick={() => setOpen(o => !o)}>
+    <div className="social-item">
+      <button className="social-header" onClick={() => setOpen(o => !o)}>
         <span>{icon} {platform}</span>
         <span className="social-toggle">{open ? '▲' : '▼'}</span>
-      </div>
+      </button>
       {open && (
         <div className="social-body">
           <pre className="social-text">{text}</pre>

@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { dispatchWorkflow } from '../lib/github.js'
 import './TopicInput.css'
 
@@ -7,44 +7,48 @@ const AUDIO_METHODS = [
     id: 'podcastfy',
     label: 'Podcastfy',
     tag: 'Free',
-    desc: 'Open-source AI podcast generation. Two conversational hosts, ~50 min deep-dive. Fully automated.',
+    tagStyle: 'tag-green',
+    desc: 'Two AI hosts debate and explore your topic. ~50 min, fully automated.',
   },
   {
     id: 'elevenlabs',
     label: 'ElevenLabs',
-    tag: 'Best quality',
+    tag: 'Best voices',
+    tagStyle: '',
     desc: 'Premium voice quality via ElevenLabs GenFM. Requires ElevenLabs API key.',
   },
   {
     id: 'notebooklm',
     label: 'NotebookLM',
     tag: 'Manual step',
-    desc: 'Research is packaged for you. You upload to NotebookLM and generate the audio there — then continue.',
+    tagStyle: '',
+    desc: 'Research is packaged for upload to Google NotebookLM. You generate audio there.',
   },
 ]
 
 export default function TopicInput({ onStart, hasSettings, onNeedSettings }) {
-  const [topic, setTopic] = useState('')
-  const [inputMode, setInputMode] = useState('text') // text | voice | file
+  const [topic, setTopic]           = useState('')
+  const [inputMode, setInputMode]   = useState('text')
   const [audioMethod, setAudioMethod] = useState('podcastfy')
-  const [recording, setRecording] = useState(false)
+  const [recording, setRecording]   = useState(false)
   const [transcribing, setTranscribing] = useState(false)
-  const [launching, setLaunching] = useState(false)
-  const [error, setError] = useState(null)
-  const mediaRef = useRef(null)
-  const chunksRef = useRef([])
-  const fileRef = useRef(null)
+  const [launching, setLaunching]   = useState(false)
+  const [error, setError]           = useState(null)
+  const [dragOver, setDragOver]     = useState(false)
 
-  // Browser voice recording via Web Speech API
+  const recognitionRef = useRef(null)
+  const fileRef        = useRef(null)
+
+  /* ── Voice ── */
   function startVoice() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition
-    if (!SR) { setError('Voice recording not supported in this browser. Use Chrome or Safari.'); return }
-    const recognition = new SR()
-    recognition.continuous = true
-    recognition.interimResults = true
-    recognition.lang = 'en-US'
+    if (!SR) { setError('Voice not supported in this browser — use Chrome or Safari.'); return }
+    const r = new SR()
+    r.continuous = true
+    r.interimResults = true
+    r.lang = 'en-US'
     let final = ''
-    recognition.onresult = e => {
+    r.onresult = e => {
       let interim = ''
       for (let i = e.resultIndex; i < e.results.length; i++) {
         if (e.results[i].isFinal) final += e.results[i][0].transcript + ' '
@@ -52,33 +56,29 @@ export default function TopicInput({ onStart, hasSettings, onNeedSettings }) {
       }
       setTopic(final + interim)
     }
-    recognition.onerror = () => setError('Voice error. Try typing instead.')
-    recognition.onend = () => setRecording(false)
-    recognition.start()
-    mediaRef.current = recognition
+    r.onerror = () => setError('Voice error — try typing instead.')
+    r.onend   = () => setRecording(false)
+    r.start()
+    recognitionRef.current = r
     setRecording(true)
     setError(null)
   }
 
   function stopVoice() {
-    if (mediaRef.current) { mediaRef.current.stop(); mediaRef.current = null }
+    recognitionRef.current?.stop()
+    recognitionRef.current = null
     setRecording(false)
   }
 
-  async function handleFileUpload(e) {
-    const file = e.target.files?.[0]
+  /* ── Audio file → Whisper ── */
+  async function transcribeFile(file) {
     if (!file) return
     setTranscribing(true)
     setError(null)
     try {
-      // Use OpenAI Whisper via a fetch call — the browser-side call needs the key from settings
       const { getSettings } = await import('../lib/settings.js')
       const { openaiKey } = getSettings()
-      if (!openaiKey) {
-        setError('Add your OpenAI API key in Settings to use audio file upload.')
-        setTranscribing(false)
-        return
-      }
+      if (!openaiKey) throw new Error('Add your OpenAI key in Settings to transcribe audio files.')
       const fd = new FormData()
       fd.append('file', file)
       fd.append('model', 'whisper-1')
@@ -88,130 +88,188 @@ export default function TopicInput({ onStart, hasSettings, onNeedSettings }) {
         body: fd,
       })
       const data = await res.json()
-      if (data.text) setTopic(data.text)
+      if (data.text) { setTopic(data.text); setInputMode('text') }
       else throw new Error(data.error?.message || 'Transcription failed')
     } catch (err) {
-      setError(`Transcription error: ${err.message}`)
+      setError(err.message)
     } finally {
       setTranscribing(false)
     }
   }
 
+  /* ── Drag & drop ── */
+  const handleDragOver = useCallback(e => { e.preventDefault(); setDragOver(true) }, [])
+  const handleDragLeave = useCallback(() => setDragOver(false), [])
+  const handleDrop = useCallback(e => {
+    e.preventDefault()
+    setDragOver(false)
+    const file = e.dataTransfer.files?.[0]
+    if (file?.type.startsWith('audio/')) transcribeFile(file)
+    else setError('Please drop an audio file (mp3, m4a, wav, etc.)')
+  }, [])
+
+  /* ── Launch ── */
   async function handleStart() {
     if (!hasSettings) { onNeedSettings(); return }
-    if (!topic.trim()) { setError('Please enter or record your topic first.'); return }
+    if (!topic.trim()) { setError('Enter or record your topic first.'); return }
     setLaunching(true)
     setError(null)
     try {
-      const runLabel = `ep-${Date.now()}`
-      await dispatchWorkflow({ topic: topic.trim(), audioMethod, runLabel })
-      onStart(runLabel)
+      const label = `ep-${Date.now()}`
+      await dispatchWorkflow({ topic: topic.trim(), audioMethod, runLabel: label })
+      onStart(label)
     } catch (err) {
-      setError(`Failed to start: ${err.message}`)
+      setError(`Could not start: ${err.message}`)
       setLaunching(false)
     }
   }
 
+  const canStart = !launching && topic.trim().length > 0
+
   return (
     <main className="main">
-      <div className="input-header">
+
+      {/* Page heading */}
+      <div className="ti-heading">
         <h1>What do you want to go deep on?</h1>
-        <p>Speak, upload audio, or type your idea — then hit Start. Everything else is automated.</p>
+        <p>Type, speak, or drop an audio file. Everything else is automated.</p>
       </div>
 
+      {/* Settings nudge */}
       {!hasSettings && (
-        <div className="settings-banner card" onClick={onNeedSettings}>
-          <span>⚙ Configure your GitHub settings first →</span>
-        </div>
+        <button className="settings-nudge" onClick={onNeedSettings}>
+          <span className="nudge-dot" />
+          Configure GitHub settings before starting
+          <span className="nudge-arrow">→</span>
+        </button>
       )}
 
-      <div className="card topic-card">
-        <div className="input-mode-tabs">
-          {[['text', '⌨ Type'], ['voice', '🎙 Record'], ['file', '📁 Upload']].map(([mode, label]) => (
-            <button
-              key={mode}
-              className={`mode-tab ${inputMode === mode ? 'active' : ''}`}
-              onClick={() => setInputMode(mode)}
+      {/* Two-column grid */}
+      <div className="ti-grid">
+
+        {/* ── Left: Topic input ── */}
+        <div className="ti-left">
+
+          {/* Mode tabs */}
+          <div className="mode-tabs">
+            {[['text','Type'],['voice','Record'],['file','Upload']].map(([m,l]) => (
+              <button
+                key={m}
+                className={`mode-tab ${inputMode === m ? 'active' : ''}`}
+                onClick={() => setInputMode(m)}
+              >{l}</button>
+            ))}
+          </div>
+
+          {/* Text mode */}
+          {inputMode === 'text' && (
+            <textarea
+              className="topic-area"
+              rows={7}
+              placeholder="e.g. The Chinese Cultural Revolution — what caused it, what actually happened, and its lasting impact on modern China"
+              value={topic}
+              onChange={e => setTopic(e.target.value)}
+            />
+          )}
+
+          {/* Voice mode */}
+          {inputMode === 'voice' && (
+            <div className="voice-panel">
+              <button
+                className={`voice-btn ${recording ? 'active' : ''}`}
+                onClick={recording ? stopVoice : startVoice}
+              >
+                <span className="voice-icon">{recording ? '■' : '●'}</span>
+                {recording ? 'Stop recording' : 'Start recording'}
+              </button>
+              {recording && <p className="voice-hint">Listening… speak your idea naturally</p>}
+              {topic && (
+                <textarea
+                  className="topic-area"
+                  rows={5}
+                  value={topic}
+                  onChange={e => setTopic(e.target.value)}
+                />
+              )}
+            </div>
+          )}
+
+          {/* File / drop mode */}
+          {inputMode === 'file' && (
+            <div
+              className={`drop-zone ${dragOver ? 'drag-over' : ''} ${transcribing ? 'loading' : ''}`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onClick={() => !transcribing && fileRef.current?.click()}
             >
-              {label}
-            </button>
-          ))}
+              <input
+                ref={fileRef}
+                type="file"
+                accept="audio/*"
+                style={{ display: 'none' }}
+                onChange={e => transcribeFile(e.target.files?.[0])}
+              />
+              {transcribing ? (
+                <>
+                  <div className="drop-spinner" />
+                  <p className="drop-label">Transcribing with Whisper…</p>
+                </>
+              ) : (
+                <>
+                  <div className="drop-icon">🎵</div>
+                  <p className="drop-label">Drop an audio file here</p>
+                  <p className="drop-hint">or click to browse — mp3, m4a, wav, ogg</p>
+                </>
+              )}
+            </div>
+          )}
+
+          {topic && inputMode !== 'text' && (
+            <p className="topic-preview-label">Transcribed topic:</p>
+          )}
         </div>
 
-        {inputMode === 'text' && (
-          <textarea
-            className="topic-textarea"
-            placeholder="e.g. The Chinese Cultural Revolution — causes, what actually happened, and its lasting impact on modern China"
-            value={topic}
-            onChange={e => setTopic(e.target.value)}
-            rows={5}
-          />
-        )}
-
-        {inputMode === 'voice' && (
-          <div className="voice-area">
-            <button
-              className={`voice-btn ${recording ? 'recording' : ''}`}
-              onClick={recording ? stopVoice : startVoice}
-            >
-              {recording ? '⏹ Stop Recording' : '🎙 Start Recording'}
-            </button>
-            {recording && <div className="recording-pulse">Recording… speak your topic</div>}
-            {topic && (
-              <textarea
-                className="topic-textarea"
-                value={topic}
-                onChange={e => setTopic(e.target.value)}
-                rows={4}
-              />
-            )}
-          </div>
-        )}
-
-        {inputMode === 'file' && (
-          <div className="file-area">
-            <input ref={fileRef} type="file" accept="audio/*" style={{ display: 'none' }} onChange={handleFileUpload} />
-            <button className="btn-secondary upload-btn" onClick={() => fileRef.current?.click()} disabled={transcribing}>
-              {transcribing ? 'Transcribing…' : '📁 Choose audio file'}
-            </button>
-            {topic && (
-              <textarea
-                className="topic-textarea"
-                value={topic}
-                onChange={e => setTopic(e.target.value)}
-                rows={4}
-              />
-            )}
-          </div>
-        )}
-      </div>
-
-      <div className="card audio-method-card">
-        <p className="section-title">Audio Generation Method</p>
-        <div className="audio-methods">
-          {AUDIO_METHODS.map(m => (
-            <label key={m.id} className={`radio-option ${audioMethod === m.id ? 'selected' : ''}`}>
-              <input type="radio" name="audio" value={m.id} checked={audioMethod === m.id} onChange={() => setAudioMethod(m.id)} />
-              <div>
-                <div className="method-label">
-                  {m.label} <span className="tag">{m.tag}</span>
+        {/* ── Right: Audio method ── */}
+        <div className="ti-right">
+          <p className="label">Audio method</p>
+          <div className="method-list">
+            {AUDIO_METHODS.map(m => (
+              <button
+                key={m.id}
+                className={`method-card ${audioMethod === m.id ? 'selected' : ''}`}
+                onClick={() => setAudioMethod(m.id)}
+              >
+                <div className="method-card-top">
+                  <span className="method-name">{m.label}</span>
+                  <span className={`tag ${m.tagStyle}`}>{m.tag}</span>
                 </div>
-                <div className="method-desc">{m.desc}</div>
-              </div>
-            </label>
-          ))}
+                <p className="method-desc">{m.desc}</p>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      {error && <div className="error-banner">{error}</div>}
+      {error && <p className="error-msg">{error}</p>}
 
-      <button
-        className="btn-primary start-btn"
-        onClick={handleStart}
-        disabled={launching || !topic.trim()}
-      >
-        {launching ? 'Starting…' : '▶ Start Automation'}
-      </button>
+      {/* Start button */}
+      <div className="ti-footer">
+        <button
+          className="btn-primary start-btn"
+          onClick={handleStart}
+          disabled={!canStart}
+        >
+          {launching
+            ? <><span className="start-spinner" /> Starting…</>
+            : <>Start automation →</>
+          }
+        </button>
+        <p className="ti-footer-hint">
+          Research takes ~40 min. You'll get titles, descriptions, audio, social posts, and cover photo links.
+        </p>
+      </div>
+
     </main>
   )
 }

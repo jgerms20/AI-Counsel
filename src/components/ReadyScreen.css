@@ -1,48 +1,172 @@
-.ready-main { padding-bottom: 3rem; }
+/* ── Ready page ── */
+.ready-heading {
+  margin-bottom: 2rem;
+}
+.ready-heading h1 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--cream);
+  margin-bottom: 0.35rem;
+  letter-spacing: -0.01em;
+}
+.ready-heading p { color: var(--cream2); font-size: 0.9rem; }
 
-.ready-header { margin-bottom: 2rem; }
-.ready-header h1 { font-size: 1.6rem; font-weight: 700; margin-bottom: 0.4rem; }
-.ready-header p { color: var(--text2); font-size: 0.9rem; }
-
+/* ── Sections ── */
 .ready-section { margin-bottom: 1rem; }
 
-.audio-links { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 0.5rem; }
-.audio-btn { font-size: 0.9rem; padding: 0.7rem 1.25rem; }
+/* ── Audio ── */
+.audio-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.25rem;
+}
+.audio-row a {
+  font-size: 0.875rem;
+  padding: 0.65rem 1.1rem;
+}
 
-.pick-list { display: flex; flex-direction: column; gap: 0.5rem; }
-.pick-list .radio-option { align-items: flex-start; }
-.desc-option .desc-preview { font-size: 0.83rem; color: var(--text2); line-height: 1.6; white-space: pre-wrap; }
-.pick-copy { margin-top: 0.75rem; }
+/* ── Pick lists (titles / descriptions) ── */
+.pick-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.pick-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  padding: 0.85rem 1rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  background: var(--surface);
+  transition: border-color 0.15s, background 0.15s;
+  width: 100%;
+  text-align: left;
+}
+.pick-option:hover { border-color: var(--border2); background: var(--surface2); }
+.pick-option.selected {
+  border-color: var(--green);
+  background: var(--green-dim);
+}
+.pick-option input[type="radio"] {
+  accent-color: var(--green);
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+.pick-text {
+  font-size: 0.875rem;
+  color: var(--cream);
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+.pick-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: 0.6rem;
+}
 
-.poll-list { display: flex; flex-direction: column; gap: 0.75rem; }
-.poll-item { border: 1px solid var(--border); border-radius: 10px; padding: 0.85rem 1rem; }
-.poll-question { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.6rem; }
-.poll-options { display: flex; flex-wrap: wrap; gap: 0.4rem; }
-.poll-opt { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 0.25rem 0.65rem; font-size: 0.78rem; color: var(--text2); }
+/* ── Poll questions ── */
+.poll-list { display: flex; flex-direction: column; gap: 0.65rem; }
+.poll-item {
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.9rem 1rem;
+  background: var(--surface);
+}
+.poll-q {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.55rem;
+}
+.poll-q-text { font-weight: 600; font-size: 0.875rem; color: var(--cream); line-height: 1.4; }
+.poll-opts { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.poll-opt {
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  padding: 0.22rem 0.6rem;
+  font-size: 0.75rem;
+  color: var(--cream2);
+}
 
-.cover-hint { color: var(--text2); font-size: 0.83rem; margin-bottom: 0.85rem; }
+/* ── Cover image links ── */
+.cover-hint { font-size: 0.82rem; color: var(--cream2); margin-bottom: 0.85rem; }
 .cover-links { display: flex; flex-direction: column; gap: 0.5rem; }
 .cover-link {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.75rem 1rem;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  color: var(--text);
-  font-size: 0.875rem;
+  padding: 0.8rem 1rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--cream);
+  font-size: 0.85rem;
+  background: var(--surface);
   transition: border-color 0.15s, background 0.15s;
 }
-.cover-link:hover { border-color: var(--accent); background: rgba(124,106,247,0.06); text-decoration: none; }
-.cover-num { background: var(--accent); color: #fff; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 700; flex-shrink: 0; }
-.cover-arrow { margin-left: auto; color: var(--text2); }
+.cover-link:hover {
+  border-color: var(--green-border);
+  background: var(--green-dim);
+  text-decoration: none;
+}
+.cover-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--green);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.cover-arrow { margin-left: auto; color: var(--cream3); }
 
-.social-post { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 0.5rem; }
-.social-header { display: flex; justify-content: space-between; align-items: center; padding: 0.85rem 1rem; cursor: pointer; font-weight: 600; font-size: 0.9rem; }
+/* ── Social posts ── */
+.social-list { display: flex; flex-direction: column; gap: 0.5rem; }
+.social-item {
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--surface);
+}
+.social-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1rem;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--cream);
+}
 .social-header:hover { background: var(--surface2); }
-.social-toggle { color: var(--text2); font-size: 0.75rem; }
-.social-body { padding: 0 1rem 1rem; border-top: 1px solid var(--border); }
-.social-text { white-space: pre-wrap; font-family: inherit; font-size: 0.85rem; line-height: 1.7; color: var(--text2); padding: 0.85rem 0; margin: 0; }
+.social-toggle { color: var(--cream3); font-size: 0.72rem; }
+.social-body {
+  border-top: 1.5px solid var(--border);
+  padding: 1rem;
+}
+.social-text {
+  font-family: inherit;
+  font-size: 0.85rem;
+  line-height: 1.7;
+  color: var(--cream2);
+  white-space: pre-wrap;
+  margin: 0 0 0.75rem;
+}
 
-.ready-footer { margin-top: 2rem; text-align: center; }
-.ready-footer .btn-primary { font-size: 1rem; padding: 0.85rem 2rem; }
+/* ── Footer ── */
+.ready-footer {
+  margin-top: 2.5rem;
+  padding-top: 2rem;
+  border-top: 1.5px solid var(--border);
+  display: flex;
+  justify-content: flex-start;
+}

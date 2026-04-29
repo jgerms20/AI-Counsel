@@ -2,48 +2,55 @@ import { useState } from 'react'
 import { getSettings, saveSettings } from '../lib/settings.js'
 import './Settings.css'
 
+const SECRETS = [
+  ['ANTHROPIC_API_KEY',  'Your Claude API key — console.anthropic.com'],
+  ['OPENAI_API_KEY',     'Your OpenAI API key — platform.openai.com'],
+  ['GEMINI_API_KEY',     'Your Gemini API key — aistudio.google.com'],
+  ['ELEVENLABS_API_KEY', 'ElevenLabs key (only if using ElevenLabs audio)'],
+  ['GH_PAT',             'Same Personal Access Token as above — lets Actions commit results back'],
+]
+
 export default function Settings({ onSave }) {
   const saved = getSettings()
-  const [pat, setPat] = useState(saved.githubPat || '')
-  const [repo, setRepo] = useState(saved.repo || 'jgerms20/AI-Counsel')
-  const [saved_, setSaved] = useState(false)
+  const [pat,     setPat]   = useState(saved.githubPat || '')
+  const [repo,    setRepo]  = useState(saved.repo      || 'jgerms20/AI-Counsel')
+  const [success, setSuccess] = useState(false)
 
   function handleSave(e) {
     e.preventDefault()
     saveSettings({ githubPat: pat.trim(), repo: repo.trim() })
-    setSaved(true)
-    setTimeout(() => { setSaved(false); onSave() }, 800)
+    setSuccess(true)
+    setTimeout(() => { setSuccess(false); onSave() }, 900)
   }
 
   return (
     <main className="main">
-      <div className="settings-header">
+      <div className="settings-heading">
         <h1>Settings</h1>
-        <p className="settings-desc">
-          Your GitHub PAT is stored only in your browser — never sent to any server other than GitHub.
-        </p>
+        <p>Your PAT is stored only in this browser — never sent anywhere except GitHub's own API.</p>
       </div>
 
       <form onSubmit={handleSave} className="settings-form card">
         <div className="field">
-          <label>GitHub Personal Access Token</label>
+          <label className="label">GitHub Personal Access Token</label>
           <input
             type="password"
             value={pat}
             onChange={e => setPat(e.target.value)}
             placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
             required
+            autoComplete="off"
           />
           <span className="field-hint">
             Needs <code>repo</code> + <code>workflow</code> scopes.{' '}
             <a href="https://github.com/settings/tokens/new?scopes=repo,workflow" target="_blank" rel="noreferrer">
-              Create one →
+              Create one on GitHub →
             </a>
           </span>
         </div>
 
         <div className="field">
-          <label>GitHub Repository</label>
+          <label className="label">Repository</label>
           <input
             type="text"
             value={repo}
@@ -53,28 +60,22 @@ export default function Settings({ onSave }) {
           />
         </div>
 
-        <button type="submit" className="btn-primary" style={{ width: '100%' }}>
-          {saved_ ? '✓ Saved' : 'Save Settings'}
+        <button type="submit" className="btn-primary save-btn">
+          {success ? '✓ Saved' : 'Save settings'}
         </button>
       </form>
 
-      <div className="settings-secrets card">
-        <p className="section-title">GitHub Secrets to configure in your repo</p>
-        <p className="settings-desc" style={{ marginBottom: '1rem' }}>
-          Go to your repo → Settings → Secrets and variables → Actions, and add:
+      <div className="secrets-card card">
+        <p className="label">GitHub Secrets to add to your repo</p>
+        <p className="secrets-note">
+          Repo → Settings → Secrets and variables → Actions → New repository secret
         </p>
         <table className="secrets-table">
           <thead>
-            <tr><th>Secret</th><th>Value</th></tr>
+            <tr><th>Secret name</th><th>Value</th></tr>
           </thead>
           <tbody>
-            {[
-              ['ANTHROPIC_API_KEY', 'Your Claude API key'],
-              ['OPENAI_API_KEY', 'Your OpenAI API key'],
-              ['GEMINI_API_KEY', 'Your Gemini API key'],
-              ['ELEVENLABS_API_KEY', 'Your ElevenLabs key (if using ElevenLabs audio)'],
-              ['GH_PAT', 'Same PAT as above (so Actions can commit results)'],
-            ].map(([name, desc]) => (
+            {SECRETS.map(([name, desc]) => (
               <tr key={name}>
                 <td><code>{name}</code></td>
                 <td className="secret-desc">{desc}</td>
